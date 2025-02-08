@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CosmoQuest AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
-    <script>
-        // Wait for Lucide to load
-        window.addEventListener('load', function() {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        });
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .chat-container {
             transition: transform 0.3s ease;
@@ -50,7 +42,7 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center space-x-3">
                     <div class="bg-blue-500/10 p-2 rounded-lg">
-                        <i data-lucide="rocket" class="h-8 w-8 text-blue-500"></i>
+                        <i class="fas fa-rocket h-8 w-8 text-blue-500"></i>
                     </div>
                     <span class="ml-2 text-xl font-bold text-white">CosmoQuest AI</span>
                 </div>
@@ -65,7 +57,7 @@
     <div id="loading-state" class="min-h-screen flex items-center justify-center px-4">
         <div class="text-center space-y-4">
             <div class="relative">
-                <i data-lucide="loader-2" class="h-12 w-12 text-blue-500 animate-spin mx-auto"></i>
+                <i class="fas fa-circle-notch fa-spin h-12 w-12 text-blue-500 mx-auto"></i>
                 <div class="absolute inset-0 bg-gradient-radial from-blue-500/20 to-transparent blur-xl"></div>
             </div>
             <div class="space-y-2">
@@ -79,7 +71,7 @@
     <div id="error-state" class="min-h-screen flex items-center justify-center hidden px-4">
         <div class="bg-red-500/10 border border-red-500/50 text-white p-6 rounded-lg max-w-md">
             <div class="flex items-center gap-3 mb-3">
-                <i data-lucide="alert-triangle" class="h-6 w-6 text-red-500"></i>
+                <i class="fas fa-triangle-exclamation h-6 w-6 text-red-500"></i>
                 <h3 class="text-lg font-semibold">Error Loading Data</h3>
             </div>
             <p id="error-message" class="text-slate-300"></p>
@@ -101,7 +93,7 @@
         <div class="bg-slate-800/95 backdrop-blur-sm border-l border-t border-slate-700 rounded-tl-lg shadow-2xl">
             <div id="chat-header" class="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="message-square" class="h-5 w-5 text-blue-500"></i>
+                    <i class="fas fa-message h-5 w-5 text-blue-500"></i>
                     <span class="font-medium text-white">CosmoGuide AI</span>
                 </div>
                 <div class="text-slate-400 text-sm" id="agent-status"></div>
@@ -123,7 +115,7 @@
                         id="send-message"
                         class="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     >
-                        <i data-lucide="send" class="h-5 w-5"></i>
+                        <i class="fas fa-paper-plane h-5 w-5"></i>
                     </button>
                 </div>
             </div>
@@ -151,17 +143,17 @@
         const agents = {
             explorer: {
                 name: 'Explorer',
-                icon: 'rocket',
+                icon: 'fa-rocket',
                 description: 'Discovers and explains new space phenomena'
             },
             analyst: {
                 name: 'Analyst',
-                icon: 'brain',
+                icon: 'fa-brain',
                 description: 'Analyzes space data and predicts trends'
             },
             teacher: {
                 name: 'Teacher',
-                icon: 'star',
+                icon: 'fa-star',
                 description: 'Educates about space concepts'
             }
         };
@@ -263,9 +255,6 @@
             if (state.nasaData.exoplanets?.length) {
                 grid.innerHTML += createExoplanetsCard(state.nasaData.exoplanets);
             }
-
-            // Reinitialize Lucide icons
-            lucide.createIcons();
         }
 
         // Card creation functions
@@ -275,7 +264,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 overflow-hidden">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="star" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-star h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">Astronomy Picture of the Day</h2>
                             </div>
                         </div>
@@ -301,7 +290,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="alert-triangle" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-triangle-exclamation h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">Near Earth Objects</h2>
                             </div>
                         </div>
@@ -338,7 +327,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="satellite" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-satellite h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">ISS Live Location</h2>
                             </div>
                         </div>
@@ -369,7 +358,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="sun" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-sun h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">Space Weather Alerts</h2>
                             </div>
                         </div>
@@ -400,7 +389,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="camera" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-camera h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">Latest Mars Photos</h2>
                             </div>
                         </div>
@@ -432,7 +421,7 @@
                     <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
                         <div class="p-4 border-b border-slate-700">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="globe" class="h-5 w-5 text-blue-500"></i>
+                                <i class="fas fa-globe h-5 w-5 text-blue-500"></i>
                                 <h2 class="text-lg font-semibold text-white">Newly Discovered Exoplanets</h2>
                             </div>
                         </div>
@@ -504,7 +493,6 @@
             const message = input.value.trim();
             if (!message) return;
 
-            // Add user message immediately
             state.messages.push({
                 type: 'user',
                 content: message
@@ -551,7 +539,6 @@
                 updateChatUI();
             } catch (error) {
                 console.error('Send Message Error:', error);
-                // Remove loading message
                 state.messages = state.messages.filter(m => !m.isLoading);
                 state.messages.push({
                     type: 'bot',
@@ -560,6 +547,76 @@
                 });
                 updateChatUI();
             }
+        }
+
+        function showError(message) {
+            const errorState = document.getElementById('error-state');
+            const errorMessage = document.getElementById('error-message');
+            const loadingState = document.getElementById('loading-state');
+            const mainContent = document.getElementById('main-content');
+            
+            errorMessage.textContent = message;
+            errorState.classList.remove('hidden');
+            loadingState.classList.add('hidden');
+            mainContent.classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            const chatHeader = document.getElementById('chat-header');
+            const chatContainer = document.getElementById('chat-container');
+            
+            chatHeader.addEventListener('click', () => {
+                state.isChatOpen = !state.isChatOpen;
+                chatContainer.classList.toggle('chat-hidden');
+                chatContainer.classList.toggle('chat-visible');
+            });
+
+            const sendButton = document.getElementById('send-message');
+            const chatInput = document.getElementById('chat-input');
+
+            sendButton.addEventListener('click', handleSendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSendMessage();
+                }
+            });
+        }
+
+        function setupAgentSelector() {
+            const agentSelector = document.getElementById('agent-selector');
+            
+            agentSelector.innerHTML = Object.entries(agents).map(([key, agent]) => `
+                <button
+                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                        state.activeAgent === key 
+                            ? 'bg-blue-500/20 text-blue-400' 
+                            : 'hover:bg-slate-800 text-slate-400'
+                    }"
+                    data-agent="${key}"
+                >
+                    <i class="fas ${agent.icon} h-4 w-4"></i>
+                    <span>${agent.name}</span>
+                </button>
+            `).join('');
+
+            const agentButtons = agentSelector.querySelectorAll('button');
+            agentButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const newAgent = button.dataset.agent;
+                    if (newAgent !== state.activeAgent) {
+                        state.activeAgent = newAgent;
+                        
+                        agentButtons.forEach(btn => {
+                            btn.classList.remove('bg-blue-500/20', 'text-blue-400');
+                            btn.classList.add('hover:bg-slate-800', 'text-slate-400');
+                        });
+                        button.classList.remove('hover:bg-slate-800', 'text-slate-400');
+                        button.classList.add('bg-blue-500/20', 'text-blue-400');
+                        
+                        await initializeChat();
+                    }
+                });
+            });
         }
 
         // Enhanced chat UI update
@@ -575,7 +632,7 @@
                         ${message.type === 'bot' ? `
                             <div class="flex items-center gap-2 mb-1 text-xs text-slate-400">
                                 <div class="bg-slate-600/50 p-1 rounded">
-                                    <i data-lucide="${agents[message.agent].icon}" class="h-3 w-3"></i>
+                                    <i class="fas ${agents[message.agent].icon} h-3 w-3"></i>
                                 </div>
                                 <span>${agents[message.agent].name}</span>
                             </div>
@@ -587,96 +644,11 @@
                 </div>
             `).join('');
             
-            // Reinitialize icons and scroll to bottom
-            lucide.createIcons();
             chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Update agent status
             document.getElementById('agent-status').textContent = `${agents[state.activeAgent].name} Active`;
         }
 
-        // Function to show error messages
-function showError(message) {
-    const errorState = document.getElementById('error-state');
-    const errorMessage = document.getElementById('error-message');
-    const loadingState = document.getElementById('loading-state');
-    const mainContent = document.getElementById('main-content');
-    
-    errorMessage.textContent = message;
-    errorState.classList.remove('hidden');
-    loadingState.classList.add('hidden');
-    mainContent.classList.add('hidden');
-}
-
-// Function to setup event listeners
-function setupEventListeners() {
-    // Chat toggle functionality
-    const chatHeader = document.getElementById('chat-header');
-    const chatContainer = document.getElementById('chat-container');
-    
-    chatHeader.addEventListener('click', () => {
-        state.isChatOpen = !state.isChatOpen;
-        chatContainer.classList.toggle('chat-hidden');
-        chatContainer.classList.toggle('chat-visible');
-    });
-
-    // Send message functionality
-    const sendButton = document.getElementById('send-message');
-    const chatInput = document.getElementById('chat-input');
-
-    sendButton.addEventListener('click', handleSendMessage);
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleSendMessage();
-        }
-    });
-}
-
-// Function to setup agent selector
-function setupAgentSelector() {
-    const agentSelector = document.getElementById('agent-selector');
-    
-    agentSelector.innerHTML = Object.entries(agents).map(([key, agent]) => `
-        <button
-            class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                state.activeAgent === key 
-                    ? 'bg-blue-500/20 text-blue-400' 
-                    : 'hover:bg-slate-800 text-slate-400'
-            }"
-            data-agent="${key}"
-        >
-            <i data-lucide="${agent.icon}" class="h-4 w-4"></i>
-            <span>${agent.name}</span>
-        </button>
-    `).join('');
-
-    // Add click event listeners to agent buttons
-    const agentButtons = agentSelector.querySelectorAll('button');
-    agentButtons.forEach(button => {
-        button.addEventListener('click', async () => {
-            const newAgent = button.dataset.agent;
-            if (newAgent !== state.activeAgent) {
-                state.activeAgent = newAgent;
-                
-                // Update button styles
-                agentButtons.forEach(btn => {
-                    btn.classList.remove('bg-blue-500/20', 'text-blue-400');
-                    btn.classList.add('hover:bg-slate-800', 'text-slate-400');
-                });
-                button.classList.remove('hover:bg-slate-800', 'text-slate-400');
-                button.classList.add('bg-blue-500/20', 'text-blue-400');
-                
-                // Reinitialize chat with new agent
-                await initializeChat();
-            }
-        });
-    });
-
-    // Initialize Lucide icons for the agent selector
-    lucide.createIcons();
-}
-
-        // Initialize the application with improved error handling
+        // Initialize the application
         async function initializeApp() {
             try {
                 console.log('Initializing application...');
