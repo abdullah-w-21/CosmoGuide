@@ -474,62 +474,11 @@
         }
 
         // Enhanced chat initialization
-        async function initializeChat() {
-            try {
-                updateLoadingStatus('Initializing AI chat...');
-                const response = await safeFetch('/api/chat/initialize', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        agent: state.activeAgent,
-                        context: {
-                            agentType: agents[state.activeAgent].description
-                        }
-                    })
-                });
-
-                state.messages = [{
-                    type: 'bot',
-                    content: response.response,
-                    agent: state.activeAgent
-                }];
-                updateChatUI();
-                document.getElementById('agent-status').textContent = `${agents[state.activeAgent].name} Active`;
-            } catch (error) {
-                console.error('Chat Initialization Error:', error);
-                state.messages = [{
-                    type: 'bot',
-                    content: `Hello! I'm your ${agents[state.activeAgent].name}. How can I help you explore space today?`,
-                    agent: state.activeAgent
-                }];
-                updateChatUI();
-            }
-        }
-
-        // Enhanced message handling
-        // Enhanced message handling
-async function handleSendMessage() {
-    const input = document.getElementById('chat-input');
-    const message = input.value.trim();
-    if (!message) return;
-
-    state.messages.push({
-        type: 'user',
-        content: message
-    });
-    updateChatUI();
-    input.value = '';
-
-    // Show typing indicator
-    state.messages.push({
-        type: 'bot',
-        content: '<div class="flex items-center gap-2"><div class="animate-pulse">Thinking</div><div class="loading-dots">...</div></div>',
-        agent: state.activeAgent,
-        isLoading: true
-    });
-    updateChatUI();
-
+async function initializeChat() {
     try {
-        // Prepare space data context
+        updateLoadingStatus('Initializing AI chat...');
+        
+        // Prepare initial context with all available space data
         const spaceContext = {
             apod: state.nasaData.apod ? {
                 title: state.nasaData.apod.title,
@@ -556,13 +505,19 @@ async function handleSendMessage() {
                     severity: alert.severity,
                     message: alert.message
                 }))
+            } : null,
+
+            marsPhotos: state.nasaData.marsPhotos?.photos ? {
+                count: state.nasaData.marsPhotos.photos.length,
+                rover: state.nasaData.marsPhotos.photos[0]?.rover.name || 'Unknown',
+                latestDate: state.nasaData.marsPhotos.photos[0]?.earth_date || 'Unknown'
             } : null
         };
 
-        const response = await safeFetch('/api/chat', {
+        const response = await safeFetch('/api/chat/initialize', {
             method: 'POST',
             body: JSON.stringify({
-                message,
+                message: "Initialize chat session",
                 agent: state.activeAgent,
                 context: {
                     agentType: agents[state.activeAgent].description,
@@ -571,15 +526,120 @@ async function handleSendMessage() {
             })
         });
 
+        if (response.response) {
+            state.messages = [{
+                type: 'bot',
+                content: response.response,
+                agent: state.activeAgent
+            }];
+        } else {
+            throw new Error('Invalid response format');
+        }
+        
+        updateChatUI();
+        document.getElementById('agent-status').textContent = `${agents[state.activeAgent].name} Active`;
+    } catch (error) {
+        console.error('Chat Initialization Error:', error);
+        state.messages = [{
+            type: 'bot',
+            content: `Hello! I'm your ${agents[state.activeAgent].name}. I have access to real-time space data including today's astronomy picture, near-Earth objects, ISS location, space weather alerts, and Mars rover photos. How can I help you explore space today?`,
+            agent: state.activeAgent
+        }];
+        updateChatUI();
+    }
+}
+
+// Enhanced message handling
+async function handleSendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    state.messages.push({
+        type: 'user',
+        content: message
+    });
+    updateChatUI();
+    input.value = '';
+
+    // Show typing indicator
+    state.messages.push({
+        type: 'bot',
+        content: '<div class="flex items-center gap-2"><div class="animate-pulse">Thinking</div><div class="loading-dots">...</div></div>',
+        agent: state.activeAgent,
+        isLoading: true
+    });
+    updateChatUI();
+
+    try {
+        // Prepare current context with all space data
+        const spaceContext = {
+            apod: state.nasaData.apod ? {
+                title: state.nasaData.apod.title,
+                explanation: state.nasaData.apod.explanation,
+                date: state.nasaData.apod.date
+            } : null,
+            
+            asteroids: state.nasaData.asteroids ? state.nasaData.asteroids.map(asteroid => ({
+                name: asteroid.name,
+                diameter: Math.round(asteroid.estimated_diameter.kilometers.estimated_diameter_max),
+                hazardous: asteroid.is_potentially_hazardous_asteroid,
+                missDistance: Math.round(asteroid.close_approach_data[0].miss_distance.kilometers)
+            })) : [],
+            
+            issPosition: state.nasaData.issPosition?.iss_position ? {
+                latitude: parseFloat(state.nasaData.issPosition.iss_position.latitude).toFixed(2),
+                longitude: parseFloat(state.nasaData.issPosition.iss_position.longitude).toFixed(2),
+                timestamp: new Date(state.nasaData.issPosition.timestamp * 1000).toISOString()
+            } : null,
+            
+            spaceWeather: state.nasaData.spaceWeather?.alerts ? {
+                alerts: state.nasaData.spaceWeather.alerts.slice(0, 3).map(alert => ({
+                    type: alert.type,
+                    severity: alert.severity,
+                    message: alert.message
+                }))
+            } : null,
+
+            marsPhotos: state.nasaData.marsPhotos?.photos ? {
+                count: state.nasaData.marsPhotos.photos.length,
+                rover: state.nasaData.marsPhotos.photos[0]?.rover.name || 'Unknown',
+                latestDate: state.nasaData.marsPhotos.photos[0]?.earth_date || 'Unknown'
+            } : null
+        };
+
+        const response = await safeFetch('/api/chat/initialize', {
+            method: 'POST',
+            body: JSON.stringify({
+                message,
+                agent: state.activeAgent,
+                context: {
+                    agentType: agents[state.activeAgent].description,
+                    spaceData: spaceContext,
+                    chatHistory: state.messages
+                        .filter(m => !m.isLoading)
+                        .map(m => ({
+                            role: m.type === 'user' ? 'user' : 'assistant',
+                            content: m.content
+                        }))
+                }
+            })
+        });
+
         // Remove loading message
         state.messages = state.messages.filter(m => !m.isLoading);
 
         // Add bot response
-        state.messages.push({
-            type: 'bot',
-            content: response.response,
-            agent: state.activeAgent
-        });
+        if (response.response) {
+            state.messages.push({
+                type: 'bot',
+                content: response.response,
+                agent: state.activeAgent
+            });
+        } else {
+            throw new Error('Invalid response format');
+        }
+        
         updateChatUI();
     } catch (error) {
         console.error('Send Message Error:', error);
