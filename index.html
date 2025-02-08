@@ -33,6 +33,32 @@
         .gradient-bg {
             background: linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(30, 41, 59, 0.9) 100%);
         }
+
+         /* ISS Globe Styles */
+        .iss-globe-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+        .iss-globe {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200407.3x5400x2700.png');
+            background-size: cover;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,255,0.5);
+        }
+        .iss-marker {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px red;
+            transition: all 0.5s ease;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
@@ -243,8 +269,14 @@
             if (state.nasaData.asteroids?.length) {
                 grid.innerHTML += createAsteroidsCard(state.nasaData.asteroids);
             }
-            if (state.nasaData.issPosition) {
-                grid.innerHTML += createISSCard(state.nasaData.issPosition);
+            if (state.nasaData.issPosition?.iss_position) {
+                const latitude = parseFloat(state.nasaData.issPosition.iss_position.latitude);
+                const longitude = parseFloat(state.nasaData.issPosition.iss_position.longitude);
+                
+                // Use setTimeout to ensure DOM is updated before positioning marker
+                setTimeout(() => {
+                    updateISSGlobeMarker(latitude, longitude);
+                }, 100);
             }
             if (state.nasaData.spaceWeather?.alerts?.length) {
                 grid.innerHTML += createSpaceWeatherCard(state.nasaData.spaceWeather);
@@ -252,9 +284,6 @@
     if (state.nasaData.marsPhotos?.photos?.length || Array.isArray(state.nasaData.marsPhotos)) {
         grid.innerHTML += createMarsPhotosCard(state.nasaData.marsPhotos);
     }
-            if (state.nasaData.exoplanets?.length) {
-                grid.innerHTML += createExoplanetsCard(state.nasaData.exoplanets);
-            }
         }
 
         // Card creation functions
@@ -332,7 +361,12 @@
                             </div>
                         </div>
                         <div class="p-4">
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="iss-globe-container">
+                                <div class="iss-globe">
+                                    <div class="iss-marker"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-4">
                                 <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
                                     <div class="text-sm text-slate-400">Latitude</div>
                                     <div class="text-2xl font-semibold text-white">${parseFloat(issPosition.iss_position.latitude).toFixed(2)}°</div>
@@ -351,6 +385,7 @@
                 </div>
             `;
         }
+
 
         function createSpaceWeatherCard(spaceWeather) {
             return `
@@ -433,45 +468,69 @@
     `;
 }
 
-        function createExoplanetsCard(exoplanets) {
-            return `
-                <div class="card">
-                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
-                        <div class="p-4 border-b border-slate-700">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-globe h-5 w-5 text-blue-500"></i>
-                                <h2 class="text-lg font-semibold text-white">Newly Discovered Exoplanets</h2>
-                            </div>
-                        </div>
-                        <div class="p-4 space-y-4">
-                            ${exoplanets.slice(0, 3).map(planet => `
-                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
-                                    <div class="font-medium text-blue-400">${planet.pl_name}</div>
-                                    <div class="grid grid-cols-2 gap-2 mt-2">
-                                        <div>
-                                            <div class="text-xs text-slate-400">Distance (ly)</div>
-                                            <div class="text-sm text-white">${planet.sy_dist?.toFixed(1) || 'Unknown'}</div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-slate-400">Planet Type</div>
-                                            <div class="text-sm text-white">${planet.pl_type || 'Unknown'}</div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-slate-400">Discovery Method</div>
-                                            <div class="text-sm text-white">${planet.discoverymethod}</div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-slate-400">Year Discovered</div>
-                                            <div class="text-sm text-white">${planet.disc_year}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
+      //  function createExoplanetsCard(exoplanets) {
+       //     return `
+       //         <div class="card">
+        //            <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+      //                 <div class="p-4 border-b border-slate-700">
+        //                    <div class="flex items-center gap-2">
+      //                          <i class="fas fa-globe h-5 w-5 text-blue-500"></i>
+       //                         <h2 class="text-lg font-semibold text-white">Newly Discovered Exoplanets</h2>
+     //                       </div>
+     //                   </div>
+      //                  <div class="p-4 space-y-4">
+        //                    ${exoplanets.slice(0, 3).map(planet => `
+         //                       <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
+        //                            <div class="font-medium text-blue-400">${planet.pl_name}</div>
+         //                           <div class="grid grid-cols-2 gap-2 mt-2">
+         //                               <div>
+           //                                 <div class="text-xs text-slate-400">Distance (ly)</div>
+           //                                 <div class="text-sm text-white">${planet.sy_dist?.toFixed(1) || 'Unknown'}</div>
+           //                             </div>
+          //                              <div>
+           //                                 <div class="text-xs text-slate-400">Planet Type</div>
+            //                                <div class="text-sm text-white">${planet.pl_type || 'Unknown'}</div>
+           //                             </div>
+        //                                <div>
+        //                                    <div class="text-xs text-slate-400">Discovery Method</div>
+        //                                    <div class="text-sm text-white">${planet.discoverymethod}</div>
+        //                                </div>
+        //                                <div>
+        //                                    <div class="text-xs text-slate-400">Year Discovered</div>
+         //                                   <div class="text-sm text-white">${planet.disc_year}</div>
+       //                                 </div>
+      //                              </div>
+     //                           </div>
+    //                        `).join('')}
+   //                     </div>
+  //                  </div>
+ //               </div>
+//            `;
+//        }
+
+         // Function to update ISS globe marker position
+        function updateISSGlobeMarker(latitude, longitude) {
+            const globe = document.querySelector('.iss-globe');
+            const marker = document.querySelector('.iss-marker');
+            
+            if (!globe || !marker) return;
+
+            const globeWidth = globe.offsetWidth;
+            const globeHeight = globe.offsetHeight;
+
+            // Convert latitude and longitude to radians
+            const latRad = latitude * (Math.PI / 180);
+            const lonRad = longitude * (Math.PI / 180);
+
+            // Calculate x and y positions
+            const x = (lonRad + Math.PI) / (2 * Math.PI) * globeWidth;
+            const y = (Math.PI / 2 - latRad) / Math.PI * globeHeight;
+
+            // Update marker position
+            marker.style.left = `${x}px`;
+            marker.style.top = `${y}px`;
         }
+
 
         // Enhanced chat initialization
 async function initializeChat() {
