@@ -269,14 +269,8 @@
             if (state.nasaData.asteroids?.length) {
                 grid.innerHTML += createAsteroidsCard(state.nasaData.asteroids);
             }
-            if (state.nasaData.issPosition?.iss_position) {
-                const latitude = parseFloat(state.nasaData.issPosition.iss_position.latitude);
-                const longitude = parseFloat(state.nasaData.issPosition.iss_position.longitude);
-                
-                // Use setTimeout to ensure DOM is updated before positioning marker
-                setTimeout(() => {
-                    updateISSGlobeMarker(latitude, longitude);
-                }, 100);
+            if (state.nasaData.issPosition) {
+                grid.innerHTML += createISSCard(state.nasaData.issPosition);
             }
             if (state.nasaData.spaceWeather?.alerts?.length) {
                 grid.innerHTML += createSpaceWeatherCard(state.nasaData.spaceWeather);
@@ -530,7 +524,21 @@
             marker.style.left = `${x}px`;
             marker.style.top = `${y}px`;
         }
+const originalUpdateUI = updateUI;
+        updateUI = function() {
+            originalUpdateUI();
 
+            // Update ISS globe marker if ISS position is available
+            if (state.nasaData.issPosition?.iss_position) {
+                const latitude = parseFloat(state.nasaData.issPosition.iss_position.latitude);
+                const longitude = parseFloat(state.nasaData.issPosition.iss_position.longitude);
+                
+                // Use setTimeout to ensure DOM is updated before positioning marker
+                setTimeout(() => {
+                    updateISSGlobeMarker(latitude, longitude);
+                }, 100);
+            }
+        };
 
         // Enhanced chat initialization
 async function initializeChat() {
