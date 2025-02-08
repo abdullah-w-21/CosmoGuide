@@ -510,7 +510,7 @@
             updateChatUI();
 
             try {
-                const response = await safeFetch('/api/chat', {
+                const response = await safeFetch('/api/chat/initialize', {
                     method: 'POST',
                     body: JSON.stringify({
                         message,
