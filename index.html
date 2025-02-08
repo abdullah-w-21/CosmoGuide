@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CosmoQuest AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+    <style>
+        .chat-container {
+            transition: transform 0.3s ease;
+        }
+        .chat-hidden {
+            transform: translateY(calc(100% - 60px));
+        }
+        .chat-visible {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900">
+    <!-- Navigation -->
+    <nav class="border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <i data-lucide="rocket" class="h-8 w-8 text-blue-500"></i>
+                    <span class="ml-2 text-xl font-bold text-white">CosmoQuest AI</span>
+                </div>
+                <div class="flex gap-4" id="agent-selector">
+                    <!-- Agent buttons will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div class="text-white flex items-center gap-2">
+            <i data-lucide="loader" class="animate-spin"></i>
+            <span>Loading space data...</span>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="min-h-screen bg-slate-900 flex items-center justify-center hidden">
+        <div class="bg-red-500 text-white p-4 rounded-lg">
+            <p id="error-message"></p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="data-grid">
+            <!-- Data cards will be inserted here -->
+        </div>
+    </main>
+
+    <!-- Chat Interface -->
+    <div id="chat-container" class="fixed bottom-0 right-0 w-96 chat-container chat-hidden">
+        <div class="bg-slate-800 border-l border-t border-slate-700 rounded-tl-lg">
+            <div id="chat-header" class="p-4 flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="message-square" class="h-5 w-5 text-blue-500"></i>
+                    <span class="font-medium text-white">CosmoGuide AI</span>
+                </div>
+            </div>
+
+            <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4">
+                <!-- Messages will be inserted here -->
+            </div>
+
+            <div class="p-4 border-t border-slate-700">
+                <div class="flex items-center gap-2">
+                    <input
+                        type="text"
+                        id="chat-input"
+                        placeholder="Ask about space data..."
+                        class="flex-1 bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <button
+                        id="send-message"
+                        class="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                        <i data-lucide="message-square" class="h-5 w-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // State management
+        const state = {
+            messages: [],
+            activeAgent: 'explorer',
+            isChatOpen: false,
+            nasaData: {
+                apod: null,
+                asteroids: [],
+                marsWeather: null,
+                issPosition: null,
+                spaceWeather: null,
+                marsPhotos: [],
+                exoplanets: []
+            }
+        };
+
+        // Agent configurations
+        const agents = {
+            explorer: {
+                name: 'Explorer',
+                icon: 'rocket',
+                description: 'Discovers and explains new space phenomena'
+            },
+            analyst: {
+                name: 'Analyst',
+                icon: 'brain',
+                description: 'Analyzes space data and predicts trends'
+            },
+            teacher: {
+                name: 'Teacher',
+                icon: 'star',
+                description: 'Educates about space concepts'
+            }
+        };
+
+        // Initialize the application
+        async function initializeApp() {
+            setupEventListeners();
+            setupAgentSelector();
+            await fetchAllData();
+            await initializeChat();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('chat-header').addEventListener('click', toggleChat);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSendMessage();
+            });
+            document.getElementById('send-message').addEventListener('click', handleSendMessage);
+        }
+
+        // Setup agent selector
+        function setupAgentSelector() {
+            const selector = document.getElementById('agent-selector');
+            Object.entries(agents).forEach(([key, agent]) => {
+                const button = document.createElement('button');
+                button.className = `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    state.activeAgent === key 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                }`;
+                button.innerHTML = `
+                    <i data-lucide="${agent.icon}" class="h-5 w-5"></i>
+                    <span>${agent.name}</span>
+                `;
+                button.addEventListener('click', () => changeAgent(key));
+                selector.appendChild(button);
+            });
+            lucide.createIcons();
+        }
+
+        // Toggle chat visibility
+        function toggleChat() {
+            state.isChatOpen = !state.isChatOpen;
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.classList.toggle('chat-hidden');
+            chatContainer.classList.toggle('chat-visible');
+        }
+
+        // Change active agent
+        async function changeAgent(agentKey) {
+            state.activeAgent = agentKey;
+            updateAgentSelector();
+            await initializeChat();
+        }
+
+        // Update agent selector UI
+        function updateAgentSelector() {
+            const buttons = document.getElementById('agent-selector').children;
+            Array.from(buttons).forEach((button, index) => {
+                const agentKey = Object.keys(agents)[index];
+                button.className = `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    state.activeAgent === agentKey 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                }`;
+            });
+        }
+
+        // Fetch all NASA data
+        async function fetchAllData() {
+            try {
+                const [apod, asteroids, issPosition, spaceWeather, marsPhotos, exoplanets] = await Promise.all([
+                    fetch('/api/nasa/apod').then(r => r.json()),
+                    fetch('/api/nasa/asteroids').then(r => r.json()),
+                    fetch('/api/nasa/iss').then(r => r.json()),
+                    fetch('/api/nasa/space-weather').then(r => r.json()),
+                    fetch('/api/nasa/mars-photos').then(r => r.json()),
+                    fetch('/api/nasa/exoplanets').then(r => r.json())
+                ]);
+
+                state.nasaData = {
+                    apod,
+                    asteroids,
+                    issPosition,
+                    spaceWeather,
+                    marsPhotos: marsPhotos?.photos?.slice(0, 5) || [],
+                    exoplanets: exoplanets?.slice(0, 5) || []
+                };
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                updateUI();
+            } catch (error) {
+                console.error('Data Fetching Error:', error);
+                showError('Failed to load space data. Please refresh the page.');
+            }
+        }
+
+        // Initialize chat
+        async function initializeChat() {
+            try {
+                const response = await fetch('/api/chat/initialize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        agent: state.activeAgent
+                    })
+                });
+                const data = await response.json();
+                state.messages = [{
+                    type: 'bot',
+                    content: data.response,
+                    agent: state.activeAgent
+                }];
+                updateChatUI();
+            } catch (error) {
+                console.error('Chat Initialization Error:', error);
+                state.messages = [{
+                    type: 'bot',
+                    content: `Hello! I'm your ${agents[state.activeAgent].name}. How can I help you explore space today?`,
+                    agent: state.activeAgent
+                }];
+                updateChatUI();
+            }
+        }
+
+        // Handle sending messages
+        async function handleSendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            state.messages.push({
+                type: 'user',
+                content: message
+            });
+            updateChatUI();
+            input.value = '';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message,
+                        agent: state.activeAgent,
+                        context: state.nasaData
+                    })
+                });
+                const data = await response.json();
+                state.messages.push({
+                    type: 'bot',
+                    content: data.response,
+                    agent: state.activeAgent
+                });
+                updateChatUI();
+            } catch (error) {
+                console.error('Send Message Error:', error);
+                state.messages.push({
+                    type: 'bot',
+                    content: 'I apologize, but I encountered an error. Please try again.',
+                    agent: state.activeAgent
+                });
+                updateChatUI();
+            }
+        }
+
+        // Update chat UI
+        function updateChatUI() {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = state.messages.map(message => `
+                <div class="flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-[80%] rounded-lg p-3 ${
+                        message.type === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-700 text-white'
+                    }">
+                        ${message.type === 'bot' ? `
+                            <div class="flex items-center gap-2 mb-1 text-xs text-gray-400">
+                                <i data-lucide="${agents[message.agent].icon}" class="h-4 w-4"></i>
+                                <span>${agents[message.agent].name}</span>
+                            </div>
+                        ` : ''}
+                        ${message.content}
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        // Start the application
+        initializeApp();
+    </script>
+</body>
+</html>

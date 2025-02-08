@@ -1,0 +1,44 @@
+{
+    "version": 2,
+    "routes": [
+      {
+        "src": "/api/chat/initialize",
+        "methods": ["POST"],
+        "dest": "/api/chat/initialize.js"
+      },
+      {
+        "src": "/api/nasa/apod",
+        "methods": ["GET"],
+        "dest": "/api/nasa/apod.js"
+      },
+      {
+        "src": "/api/nasa/asteroids",
+        "methods": ["GET"],
+        "dest": "/api/nasa/asteroids.js"
+      },
+      {
+        "src": "/api/nasa/iss",
+        "methods": ["GET"],
+        "dest": "/api/nasa/iss.js"
+      },
+      {
+        "src": "/api/nasa/mars-photos",
+        "methods": ["GET"],
+        "dest": "/api/nasa/mars-photos.js"
+      },
+      {
+        "src": "/api/nasa/exoplanets",
+        "methods": ["GET"],
+        "dest": "/api/nasa/exoplanets.js"
+      },
+      {
+        "src": "/api/nasa/space-weather",
+        "methods": ["GET"],
+        "dest": "/api/nasa/space-weather.js"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/index.html"
+      }
+    ]
+  }
