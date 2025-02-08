@@ -249,9 +249,9 @@
             if (state.nasaData.spaceWeather?.alerts?.length) {
                 grid.innerHTML += createSpaceWeatherCard(state.nasaData.spaceWeather);
             }
-            if (state.nasaData.marsPhotos?.length) {
-                grid.innerHTML += createMarsPhotosCard(state.nasaData.marsPhotos);
-            }
+    if (state.nasaData.marsPhotos?.photos?.length || Array.isArray(state.nasaData.marsPhotos)) {
+        grid.innerHTML += createMarsPhotosCard(state.nasaData.marsPhotos);
+    }
             if (state.nasaData.exoplanets?.length) {
                 grid.innerHTML += createExoplanetsCard(state.nasaData.exoplanets);
             }
@@ -363,7 +363,7 @@
                             </div>
                         </div>
                         <div class="p-4 space-y-4">
-                            ${spaceWeather.alerts.slice(0, 3).map(alert => `
+                            ${spaceWeather.alerts.slice(0, 5).map(alert => `
                                 <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
                                     <div class="flex items-center gap-2">
                                         <div class="font-medium text-blue-400">${alert.type}</div>
@@ -383,11 +383,17 @@
             `;
         }
 
-        function createMarsPhotosCard(photos) {
-    // First check if photos exist and is an array
-    if (!Array.isArray(photos) || photos.length === 0) {
-        return '';
+       function createMarsPhotosCard(marsPhotos) {
+    // Make sure we have photos data and it's in the correct format
+    const photos = Array.isArray(marsPhotos) ? marsData : marsPhotos?.photos || [];
+    
+    if (!photos || photos.length === 0) {
+        return ''; // Return empty string if no photos
     }
+
+    // Get a unique set of rovers
+    const uniqueRovers = [...new Set(photos.map(photo => photo.rover.name))];
+    const roverNames = uniqueRovers.join(', ');
 
     return `
         <div class="card">
@@ -398,7 +404,7 @@
                         <h2 class="text-lg font-semibold text-white">Latest Mars Photos</h2>
                     </div>
                     <div class="text-sm text-slate-400 mt-1">
-                        From ${photos[0].rover.name} Rover
+                        From ${roverNames} Rover
                     </div>
                 </div>
                 <div class="p-4">
@@ -406,13 +412,16 @@
                         ${photos.slice(0, 4).map(photo => `
                             <div class="relative group">
                                 <img src="${photo.img_src}" 
-                                     alt="Mars - ${photo.camera.name}"
+                                     alt="Mars - ${photo.camera.full_name}"
+                                     loading="lazy"
                                      class="w-full h-32 object-cover rounded-lg"
                                      onerror="this.src='/api/placeholder/400/320'">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                     <div class="absolute bottom-0 p-2 text-white">
                                         <div class="text-xs font-medium">${photo.camera.full_name}</div>
-                                        <div class="text-xs opacity-75">Taken: ${new Date(photo.earth_date).toLocaleDateString()}</div>
+                                        <div class="text-xs opacity-75">
+                                            ${new Date(photo.earth_date).toLocaleDateString()}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
