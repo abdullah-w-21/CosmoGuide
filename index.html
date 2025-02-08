@@ -506,66 +506,92 @@
         }
 
         // Enhanced message handling
-        async function handleSendMessage() {
-            const input = document.getElementById('chat-input');
-            const message = input.value.trim();
-            if (!message) return;
+        // Enhanced message handling
+async function handleSendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
 
-            state.messages.push({
-                type: 'user',
-                content: message
-            });
-            updateChatUI();
-            input.value = '';
+    state.messages.push({
+        type: 'user',
+        content: message
+    });
+    updateChatUI();
+    input.value = '';
 
-            // Show typing indicator
-            state.messages.push({
-                type: 'bot',
-                content: '<div class="flex items-center gap-2"><div class="animate-pulse">Thinking</div><div class="loading-dots">...</div></div>',
+    // Show typing indicator
+    state.messages.push({
+        type: 'bot',
+        content: '<div class="flex items-center gap-2"><div class="animate-pulse">Thinking</div><div class="loading-dots">...</div></div>',
+        agent: state.activeAgent,
+        isLoading: true
+    });
+    updateChatUI();
+
+    try {
+        // Prepare space data context
+        const spaceContext = {
+            apod: state.nasaData.apod ? {
+                title: state.nasaData.apod.title,
+                explanation: state.nasaData.apod.explanation,
+                date: state.nasaData.apod.date
+            } : null,
+            
+            asteroids: state.nasaData.asteroids ? state.nasaData.asteroids.map(asteroid => ({
+                name: asteroid.name,
+                diameter: Math.round(asteroid.estimated_diameter.kilometers.estimated_diameter_max),
+                hazardous: asteroid.is_potentially_hazardous_asteroid,
+                missDistance: Math.round(asteroid.close_approach_data[0].miss_distance.kilometers)
+            })) : [],
+            
+            issPosition: state.nasaData.issPosition?.iss_position ? {
+                latitude: parseFloat(state.nasaData.issPosition.iss_position.latitude).toFixed(2),
+                longitude: parseFloat(state.nasaData.issPosition.iss_position.longitude).toFixed(2),
+                timestamp: new Date(state.nasaData.issPosition.timestamp * 1000).toISOString()
+            } : null,
+            
+            spaceWeather: state.nasaData.spaceWeather?.alerts ? {
+                alerts: state.nasaData.spaceWeather.alerts.slice(0, 3).map(alert => ({
+                    type: alert.type,
+                    severity: alert.severity,
+                    message: alert.message
+                }))
+            } : null
+        };
+
+        const response = await safeFetch('/api/chat', {
+            method: 'POST',
+            body: JSON.stringify({
+                message,
                 agent: state.activeAgent,
-                isLoading: true
-            });
-            updateChatUI();
+                context: {
+                    agentType: agents[state.activeAgent].description,
+                    spaceData: spaceContext
+                }
+            })
+        });
 
-            try {
-                const response = await safeFetch('/api/chat/initialize', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        message,
-                        agent: state.activeAgent,
-                        context: {
-                            agentType: agents[state.activeAgent].description,
-                            spaceData: {
-                                apod: state.nasaData.apod,
-                                asteroids: state.nasaData.asteroids?.length || 0,
-                                issPosition: state.nasaData.issPosition?.iss_position,
-                                spaceWeather: state.nasaData.spaceWeather?.alerts?.length || 0
-                            }
-                        }
-                    })
-                });
+        // Remove loading message
+        state.messages = state.messages.filter(m => !m.isLoading);
 
-                // Remove loading message
-                state.messages = state.messages.filter(m => !m.isLoading);
-
-                // Add bot response
-                state.messages.push({
-                    type: 'bot',
-                    content: response.response,
-                    agent: state.activeAgent
-                });
-                updateChatUI();
-            } catch (error) {
-                console.error('Send Message Error:', error);
-                state.messages = state.messages.filter(m => !m.isLoading);
-                state.messages.push({
-                    type: 'bot',
-                    content: 'I apologize, but I encountered an error. Please try again.',
-                    agent: state.activeAgent
-                });
-                updateChatUI();
-            }
-        }
+        // Add bot response
+        state.messages.push({
+            type: 'bot',
+            content: response.response,
+            agent: state.activeAgent
+        });
+        updateChatUI();
+    } catch (error) {
+        console.error('Send Message Error:', error);
+        state.messages = state.messages.filter(m => !m.isLoading);
+        state.messages.push({
+            type: 'bot',
+            content: 'I apologize, but I encountered an error. Please try again.',
+            agent: state.activeAgent
+        });
+        updateChatUI();
+    }
+}
 
         function showError(message) {
             const errorState = document.getElementById('error-state');
