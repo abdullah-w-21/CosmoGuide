@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CosmoQuest AI</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
     <style>
         .chat-container {
@@ -18,15 +16,34 @@
         .chat-visible {
             transform: translateY(0);
         }
+        .loading-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+        }
+        .gradient-bg {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(30, 41, 59, 0.9) 100%);
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-900">
+<body class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
     <!-- Navigation -->
-    <nav class="border-b border-slate-700">
+    <nav class="border-b border-slate-700 bg-slate-900/95 backdrop-blur-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center">
-                    <i data-lucide="rocket" class="h-8 w-8 text-blue-500"></i>
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-500/10 p-2 rounded-lg">
+                        <i data-lucide="rocket" class="h-8 w-8 text-blue-500"></i>
+                    </div>
                     <span class="ml-2 text-xl font-bold text-white">CosmoQuest AI</span>
                 </div>
                 <div class="flex gap-4" id="agent-selector">
@@ -37,17 +54,30 @@
     </nav>
 
     <!-- Loading State -->
-    <div id="loading-state" class="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div class="text-white flex items-center gap-2">
-            <i data-lucide="loader" class="animate-spin"></i>
-            <span>Loading space data...</span>
+    <div id="loading-state" class="min-h-screen flex items-center justify-center px-4">
+        <div class="text-center space-y-4">
+            <div class="relative">
+                <i data-lucide="loader-2" class="h-12 w-12 text-blue-500 animate-spin mx-auto"></i>
+                <div class="absolute inset-0 bg-gradient-radial from-blue-500/20 to-transparent blur-xl"></div>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-xl font-medium text-white">Loading Space Data</h3>
+                <p class="text-slate-400" id="loading-status">Connecting to NASA APIs...</p>
+            </div>
         </div>
     </div>
 
     <!-- Error State -->
-    <div id="error-state" class="min-h-screen bg-slate-900 flex items-center justify-center hidden">
-        <div class="bg-red-500 text-white p-4 rounded-lg">
-            <p id="error-message"></p>
+    <div id="error-state" class="min-h-screen flex items-center justify-center hidden px-4">
+        <div class="bg-red-500/10 border border-red-500/50 text-white p-6 rounded-lg max-w-md">
+            <div class="flex items-center gap-3 mb-3">
+                <i data-lucide="alert-triangle" class="h-6 w-6 text-red-500"></i>
+                <h3 class="text-lg font-semibold">Error Loading Data</h3>
+            </div>
+            <p id="error-message" class="text-slate-300"></p>
+            <button onclick="initializeApp()" class="mt-4 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
+                Try Again
+            </button>
         </div>
     </div>
 
@@ -60,12 +90,13 @@
 
     <!-- Chat Interface -->
     <div id="chat-container" class="fixed bottom-0 right-0 w-96 chat-container chat-hidden">
-        <div class="bg-slate-800 border-l border-t border-slate-700 rounded-tl-lg">
-            <div id="chat-header" class="p-4 flex items-center justify-between cursor-pointer">
+        <div class="bg-slate-800/95 backdrop-blur-sm border-l border-t border-slate-700 rounded-tl-lg shadow-2xl">
+            <div id="chat-header" class="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-700/50 transition-colors">
                 <div class="flex items-center gap-2">
                     <i data-lucide="message-square" class="h-5 w-5 text-blue-500"></i>
                     <span class="font-medium text-white">CosmoGuide AI</span>
                 </div>
+                <div class="text-slate-400 text-sm" id="agent-status"></div>
             </div>
 
             <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4">
@@ -78,13 +109,13 @@
                         type="text"
                         id="chat-input"
                         placeholder="Ask about space data..."
-                        class="flex-1 bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="flex-1 bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
                     >
                     <button
                         id="send-message"
                         class="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     >
-                        <i data-lucide="message-square" class="h-5 w-5"></i>
+                        <i data-lucide="send" class="h-5 w-5"></i>
                     </button>
                 </div>
             </div>
@@ -130,120 +161,327 @@
             }
         };
 
-        // Initialize the application
-        async function initializeApp() {
-            setupEventListeners();
-            setupAgentSelector();
-            await fetchAllData();
-            await initializeChat();
+        // Function to update loading status
+        function updateLoadingStatus(message) {
+            document.getElementById('loading-status').textContent = message;
         }
 
-        // Setup event listeners
-        function setupEventListeners() {
-            document.getElementById('chat-header').addEventListener('click', toggleChat);
-            document.getElementById('chat-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleSendMessage();
-            });
-            document.getElementById('send-message').addEventListener('click', handleSendMessage);
+        // Enhanced error handling for fetch requests
+        async function safeFetch(url, options = {}) {
+            try {
+                console.log(`Fetching: ${url}`);
+                updateLoadingStatus(`Fetching data from ${url.split('/').pop()}...`);
+                
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers,
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(`Success fetching ${url}:`, data);
+                return data;
+            } catch (error) {
+                console.error(`Error fetching ${url}:`, error);
+                throw error;
+            }
         }
 
-        // Setup agent selector
-        function setupAgentSelector() {
-            const selector = document.getElementById('agent-selector');
-            Object.entries(agents).forEach(([key, agent]) => {
-                const button = document.createElement('button');
-                button.className = `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    state.activeAgent === key 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
-                }`;
-                button.innerHTML = `
-                    <i data-lucide="${agent.icon}" class="h-5 w-5"></i>
-                    <span>${agent.name}</span>
-                `;
-                button.addEventListener('click', () => changeAgent(key));
-                selector.appendChild(button);
-            });
-            lucide.createIcons();
-        }
-
-        // Toggle chat visibility
-        function toggleChat() {
-            state.isChatOpen = !state.isChatOpen;
-            const chatContainer = document.getElementById('chat-container');
-            chatContainer.classList.toggle('chat-hidden');
-            chatContainer.classList.toggle('chat-visible');
-        }
-
-        // Change active agent
-        async function changeAgent(agentKey) {
-            state.activeAgent = agentKey;
-            updateAgentSelector();
-            await initializeChat();
-        }
-
-        // Update agent selector UI
-        function updateAgentSelector() {
-            const buttons = document.getElementById('agent-selector').children;
-            Array.from(buttons).forEach((button, index) => {
-                const agentKey = Object.keys(agents)[index];
-                button.className = `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    state.activeAgent === agentKey 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
-                }`;
-            });
-        }
-
-        // Fetch all NASA data
+        // Fetch all NASA data with improved error handling
         async function fetchAllData() {
             try {
-                const [apod, asteroids, issPosition, spaceWeather, marsPhotos, exoplanets] = await Promise.all([
-                    fetch('/api/nasa/apod').then(r => r.json()),
-                    fetch('/api/nasa/asteroids').then(r => r.json()),
-                    fetch('/api/nasa/iss').then(r => r.json()),
-                    fetch('/api/nasa/space-weather').then(r => r.json()),
-                    fetch('/api/nasa/mars-photos').then(r => r.json()),
-                    fetch('/api/nasa/exoplanets').then(r => r.json())
-                ]);
+                updateLoadingStatus('Starting to fetch space data...');
 
-                state.nasaData = {
-                    apod,
-                    asteroids,
-                    issPosition,
-                    spaceWeather,
-                    marsPhotos: marsPhotos?.photos?.slice(0, 5) || [],
-                    exoplanets: exoplanets?.slice(0, 5) || []
-                };
+                const endpoints = [
+                    { key: 'apod', url: '/api/nasa/apod' },
+                    { key: 'asteroids', url: '/api/nasa/asteroids' },
+                    { key: 'issPosition', url: '/api/nasa/iss' },
+                    { key: 'spaceWeather', url: '/api/nasa/space-weather' },
+                    { key: 'marsPhotos', url: '/api/nasa/mars-photos' },
+                    { key: 'exoplanets', url: '/api/nasa/exoplanets' }
+                ];
+
+                const results = await Promise.allSettled(
+                    endpoints.map(endpoint => safeFetch(endpoint.url))
+                );
+
+                let hasAnyData = false;
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        state.nasaData[endpoints[index].key] = result.value;
+                        hasAnyData = true;
+                    } else {
+                        console.error(`Failed to fetch ${endpoints[index].key}:`, result.reason);
+                    }
+                });
+
+                if (!hasAnyData) {
+                    throw new Error('Unable to fetch any space data');
+                }
 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
                 updateUI();
             } catch (error) {
                 console.error('Data Fetching Error:', error);
-                showError('Failed to load space data. Please refresh the page.');
+                showError(`Failed to load space data: ${error.message}`);
             }
         }
 
-        // Initialize chat
+        // Update UI function
+        function updateUI() {
+            const grid = document.getElementById('data-grid');
+            grid.innerHTML = '';
+
+            // Add cards only if we have data
+            if (state.nasaData.apod) {
+                grid.innerHTML += createAPODCard(state.nasaData.apod);
+            }
+            if (state.nasaData.asteroids?.length) {
+                grid.innerHTML += createAsteroidsCard(state.nasaData.asteroids);
+            }
+            if (state.nasaData.issPosition) {
+                grid.innerHTML += createISSCard(state.nasaData.issPosition);
+            }
+            if (state.nasaData.spaceWeather?.alerts?.length) {
+                grid.innerHTML += createSpaceWeatherCard(state.nasaData.spaceWeather);
+            }
+            if (state.nasaData.marsPhotos?.length) {
+                grid.innerHTML += createMarsPhotosCard(state.nasaData.marsPhotos);
+            }
+            if (state.nasaData.exoplanets?.length) {
+                grid.innerHTML += createExoplanetsCard(state.nasaData.exoplanets);
+            }
+
+            // Reinitialize Lucide icons
+            lucide.createIcons();
+        }
+
+        // Card creation functions
+        function createAPODCard(apod) {
+            return `
+                <div class="lg:col-span-2 card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 overflow-hidden">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="star" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">Astronomy Picture of the Day</h2>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="relative">
+                                <img src="${apod.url}" 
+                                     alt="${apod.title}"
+                                     class="w-full h-64 object-cover rounded-lg">
+                                <div class="absolute bottom-0 left-0 right-0 p-4 gradient-bg rounded-b-lg">
+                                    <h3 class="text-white font-medium">${apod.title}</h3>
+                                </div>
+                            </div>
+                            <p class="text-slate-300 text-sm mt-4">${apod.explanation}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createAsteroidsCard(asteroids) {
+            return `
+                <div class="card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">Near Earth Objects</h2>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            ${asteroids.slice(0, 5).map(asteroid => `
+                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm hover:bg-slate-700 transition-colors">
+                                    <div class="font-medium text-blue-400">${asteroid.name}</div>
+                                    <div class="grid grid-cols-2 gap-2 mt-2">
+                                        <div>
+                                            <div class="text-xs text-slate-400">Diameter</div>
+                                            <div class="text-sm text-white">${Math.round(asteroid.estimated_diameter.kilometers.estimated_diameter_max)} km</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-slate-400">Miss Distance</div>
+                                            <div class="text-sm text-white">${Math.round(asteroid.close_approach_data[0].miss_distance.kilometers).toLocaleString()} km</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="text-sm px-2 py-1 rounded-full ${asteroid.is_potentially_hazardous_asteroid ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
+                                            ${asteroid.is_potentially_hazardous_asteroid ? '⚠️ Potentially Hazardous' : '✓ Not Hazardous'}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createISSCard(issPosition) {
+            return `
+                <div class="card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="satellite" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">ISS Live Location</h2>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
+                                    <div class="text-sm text-slate-400">Latitude</div>
+                                    <div class="text-2xl font-semibold text-white">${parseFloat(issPosition.iss_position.latitude).toFixed(2)}°</div>
+                                </div>
+                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
+                                    <div class="text-sm text-slate-400">Longitude</div>
+                                    <div class="text-2xl font-semibold text-white">${parseFloat(issPosition.iss_position.longitude).toFixed(2)}°</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-center">
+                                <div class="text-sm text-slate-400">Last Updated</div>
+                                <div class="text-white">${new Date(issPosition.timestamp * 1000).toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createSpaceWeatherCard(spaceWeather) {
+            return `
+                <div class="card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sun" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">Space Weather Alerts</h2>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            ${spaceWeather.alerts.slice(0, 3).map(alert => `
+                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
+                                    <div class="flex items-center gap-2">
+                                        <div class="font-medium text-blue-400">${alert.type}</div>
+                                        <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
+                                            ${alert.severity}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-slate-300 mt-2">${alert.message}</div>
+                                    <div class="text-xs text-slate-400 mt-1">
+                                        ${new Date(alert.time).toLocaleString()}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createMarsPhotosCard(photos) {
+            return `
+                <div class="card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="camera" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">Latest Mars Photos</h2>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                ${photos.slice(0, 4).map(photo => `
+                                    <div class="relative group">
+                                        <img src="${photo.img_src}" 
+                                             alt="Mars - ${photo.camera.name}"
+                                             class="w-full h-32 object-cover rounded-lg">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                            <div class="absolute bottom-0 p-2 text-white">
+                                                <div class="text-xs font-medium">${photo.camera.full_name}</div>
+                                                <div class="text-xs opacity-75">${photo.earth_date}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createExoplanetsCard(exoplanets) {
+            return `
+                <div class="card">
+                    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700">
+                        <div class="p-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="globe" class="h-5 w-5 text-blue-500"></i>
+                                <h2 class="text-lg font-semibold text-white">Newly Discovered Exoplanets</h2>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            ${exoplanets.slice(0, 3).map(planet => `
+                                <div class="p-4 rounded-lg bg-slate-700/50 backdrop-blur-sm">
+                                    <div class="font-medium text-blue-400">${planet.pl_name}</div>
+                                    <div class="grid grid-cols-2 gap-2 mt-2">
+                                        <div>
+                                            <div class="text-xs text-slate-400">Distance (ly)</div>
+                                            <div class="text-sm text-white">${planet.sy_dist?.toFixed(1) || 'Unknown'}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-slate-400">Planet Type</div>
+                                            <div class="text-sm text-white">${planet.pl_type || 'Unknown'}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-slate-400">Discovery Method</div>
+                                            <div class="text-sm text-white">${planet.discoverymethod}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-slate-400">Year Discovered</div>
+                                            <div class="text-sm text-white">${planet.disc_year}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Enhanced chat initialization
         async function initializeChat() {
             try {
-                const response = await fetch('/api/chat/initialize', {
+                updateLoadingStatus('Initializing AI chat...');
+                const response = await safeFetch('/api/chat/initialize', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify({
-                        agent: state.activeAgent
+                        agent: state.activeAgent,
+                        context: {
+                            agentType: agents[state.activeAgent].description
+                        }
                     })
                 });
-                const data = await response.json();
+
                 state.messages = [{
                     type: 'bot',
-                    content: data.response,
+                    content: response.response,
                     agent: state.activeAgent
                 }];
                 updateChatUI();
+                document.getElementById('agent-status').textContent = `${agents[state.activeAgent].name} Active`;
             } catch (error) {
                 console.error('Chat Initialization Error:', error);
                 state.messages = [{
@@ -255,12 +493,13 @@
             }
         }
 
-        // Handle sending messages
+        // Enhanced message handling
         async function handleSendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             if (!message) return;
 
+            // Add user message immediately
             state.messages.push({
                 type: 'user',
                 content: message
@@ -268,27 +507,47 @@
             updateChatUI();
             input.value = '';
 
+            // Show typing indicator
+            state.messages.push({
+                type: 'bot',
+                content: '<div class="flex items-center gap-2"><div class="animate-pulse">Thinking</div><div class="loading-dots">...</div></div>',
+                agent: state.activeAgent,
+                isLoading: true
+            });
+            updateChatUI();
+
             try {
-                const response = await fetch('/api/chat', {
+                const response = await safeFetch('/api/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify({
                         message,
                         agent: state.activeAgent,
-                        context: state.nasaData
+                        context: {
+                            agentType: agents[state.activeAgent].description,
+                            spaceData: {
+                                apod: state.nasaData.apod,
+                                asteroids: state.nasaData.asteroids?.length || 0,
+                                issPosition: state.nasaData.issPosition?.iss_position,
+                                spaceWeather: state.nasaData.spaceWeather?.alerts?.length || 0
+                            }
+                        }
                     })
                 });
-                const data = await response.json();
+
+                // Remove loading message
+                state.messages = state.messages.filter(m => !m.isLoading);
+
+                // Add bot response
                 state.messages.push({
                     type: 'bot',
-                    content: data.response,
+                    content: response.response,
                     agent: state.activeAgent
                 });
                 updateChatUI();
             } catch (error) {
                 console.error('Send Message Error:', error);
+                // Remove loading message
+                state.messages = state.messages.filter(m => !m.isLoading);
                 state.messages.push({
                     type: 'bot',
                     content: 'I apologize, but I encountered an error. Please try again.',
@@ -298,39 +557,61 @@
             }
         }
 
-        // Update chat UI
+        // Enhanced chat UI update
         function updateChatUI() {
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = state.messages.map(message => `
-                <div class="flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}">
+                <div class="flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} ${message.isLoading ? 'opacity-50' : ''}">
                     <div class="max-w-[80%] rounded-lg p-3 ${
                         message.type === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-700 text-white'
+                            ? 'bg-blue-600 text-white ml-4'
+                            : 'bg-slate-700/50 backdrop-blur-sm text-white mr-4'
                     }">
                         ${message.type === 'bot' ? `
-                            <div class="flex items-center gap-2 mb-1 text-xs text-gray-400">
-                                <i data-lucide="${agents[message.agent].icon}" class="h-4 w-4"></i>
+                            <div class="flex items-center gap-2 mb-1 text-xs text-slate-400">
+                                <div class="bg-slate-600/50 p-1 rounded">
+                                    <i data-lucide="${agents[message.agent].icon}" class="h-3 w-3"></i>
+                                </div>
                                 <span>${agents[message.agent].name}</span>
                             </div>
                         ` : ''}
-                        ${message.content}
+                        <div class="text-sm ${message.type === 'user' ? 'text-white' : 'text-slate-200'}">
+                            ${message.content}
+                        </div>
                     </div>
                 </div>
             `).join('');
+            
+            // Reinitialize icons and scroll to bottom
             lucide.createIcons();
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Update agent status
+            document.getElementById('agent-status').textContent = `${agents[state.activeAgent].name} Active`;
         }
 
-        // Show error message
-        function showError(message) {
-            document.getElementById('loading-state').classList.add('hidden');
-            document.getElementById('error-state').classList.remove('hidden');
-            document.getElementById('error-message').textContent = message;
+        // Initialize the application with improved error handling
+
+        // Initialize the application with improved error handling
+        async function initializeApp() {
+            try {
+                console.log('Initializing application...');
+                document.getElementById('error-state').classList.add('hidden');
+                document.getElementById('loading-state').classList.remove('hidden');
+                document.getElementById('main-content').classList.add('hidden');
+                
+                setupEventListeners();
+                setupAgentSelector();
+                await fetchAllData();
+                await initializeChat();
+            } catch (error) {
+                console.error('Initialization Error:', error);
+                showError('Failed to initialize the application. Please try again.');
+            }
         }
 
-        // Start the application
-        initializeApp();
+        // Start the application when the document is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
